@@ -52,7 +52,8 @@ Diagram of Hodly Yield Collection
 
 Diagram of User Yield Claiming
 
-<img width="756" alt="image" src="https://github.com/user-attachments/assets/f893df7e-0fdb-4282-8ac2-06556f5d6c7f">
+<img width="754" alt="image" src="https://github.com/user-attachments/assets/01d09e39-50d6-4471-b682-3450cef3f969">
+
 
 
 # Implementation
