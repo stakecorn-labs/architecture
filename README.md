@@ -62,7 +62,7 @@ Diagram of User Yield Claiming
 
 When the user deposits their ETH and delegates it to an AVS operator in a token pool, their address and amount is stored in the [Eigenlayer contract](https://www.blog.eigenlayer.xyz/ycie/): 
 
-```
+```js
 contract TokenManager {
     mapping(address => address) tokenPoolRegistry;
     mapping(address => mapping(address => uint256)) stakerPoolShares;
@@ -88,7 +88,7 @@ contract DelegationManager {
 
 The AVS deposits the yield as an ERC-20 token. The AVS is then able to compute the share of the yields to pay to each user and send it.  
 
-```
+```js
 contract YieldManager {
     uint256 public accumulatedYield; // Temporary balance of yield (points, tokens, fees)
 
@@ -108,7 +108,7 @@ The AVS calls the Gateway contract with the yield tokens, which then forwards it
 
 Only the Staker's L1 address and the yield amount is sent (in yield tokens). 
 
-```
+```js
 bytes memory argValue = abi.encode(recipients); // A standard EVM payload
 bytes memory payload  = abi.encode(
     "multi_send", // CosmWasm method name
@@ -140,7 +140,7 @@ The AVS gateway contract would hold the yield tokens forever, and the IBC Channe
 ### IBC Swap to TOR
 Hodly receives the IBC payload and executes a [Swap](https://github.com/Team-Kujira/kujira-rs/blob/master/packages/kujira-fin/src/execute.rs) to THORChain's TOR stablecoin. 
 
-```
+```rs
 ExecuteMsg
 Swap {
         offer_asset: Option<Coin>,
@@ -155,7 +155,7 @@ Swap {
 ### L1 swap to ETH Yield Account
 The callback would then redeem the TOR into L1 RUNE, then stream to ETH to the user's ETH Yield Account: 
 
-```
+```md
 MsgDeposit{
        yield:eth~eth:ethAddress
 }
@@ -165,7 +165,7 @@ MsgDeposit{
 
 The user now has a Yield Account on THORChain. This can be queried anytime to see accrued yield:
 
-```
+```md
 https://thornode.ninerealms.com/thorchain/yield/account/0xb00E81207bcDA63c9E290E0b748252418818c869
 {
 asset: "ETH~ETH",
@@ -177,7 +177,7 @@ last_withdraw_height: 17111060
 ```
 
 The user can Claim their yield at anytime by interating with [THORChain's Router](https://gitlab.com/thorchain/thornode/-/blob/develop/chain/ethereum/contracts/THORChain_Router.sol)
-```
+```md
 function depositWithExpiry(address payable vault, address asset, uint amount, string memory memo, uint expiration) public
 
 MEMO: CLAIM // Claim all the yield
