@@ -1,6 +1,8 @@
 # Technical Architecture
 📜 Technical Architecture of Hodly
 
+<img width="918" alt="image" src="https://github.com/user-attachments/assets/634d7f15-c7dd-4617-8558-b510d64f756c">
+
 
 # Overview
 
