@@ -25,23 +25,35 @@ Stakers deposit into Eigenlayer's contracts. The AVS can read and compute the us
 
 # Diagrams
 
-The following diagrams for each process provide a visual representation of Hodly's data flow. 
+The following diagrams for each process provide a visual representation of the asset flow. 
 
 ## Eigenlayer: Restaking
 
 Diagram of Eigenlyer Restaking Flow
 
+<img width="760" alt="image" src="https://github.com/user-attachments/assets/af839f2c-866f-4324-a810-c20315589acb">
+
+
 ## AVS: Yield-streaming
 
-Diagram of AVS Yield Computation
+Diagram of AVS Yield Streaming
+
+<img width="758" alt="image" src="https://github.com/user-attachments/assets/23e89e42-2652-40c7-8b05-b979309bbdcf">
+
 
 ## Hodly: Yield-collecting
 
 Diagram of Hodly Yield Collection
 
+<img width="756" alt="image" src="https://github.com/user-attachments/assets/bccd82db-1379-4b14-bda2-a9df79145b14">
+
+
 ## User: Yield-claiming
 
 Diagram of User Yield Claiming
+
+<img width="756" alt="image" src="https://github.com/user-attachments/assets/f893df7e-0fdb-4282-8ac2-06556f5d6c7f">
+
 
 # Implementation
 
