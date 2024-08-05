@@ -12,9 +12,15 @@ This document serves as a comprehensive guide to understanding the underlying de
 
 Hodly offers a gas-efficient yield-collecting solution for the [Eigenlayer](https://eigenlayer.xyz/) ecosystem, and it will initially be deployed on [Thorchain](https://thorchain.org/) which has native ETH liquidity. Users can re-stake ETH with Eigenlayer and delegate their security to an app-chain (Active Validator Set or AVS). The AVS can stream yield back to the staker as native ETH using Hodly, where stakers can view their accumulated yield, claim it, or even have it auto-streamed to their address on a gas-efficient interval. 
 
+Hodly also solves for price-discovery and liquidity of AVS tokens, and will increase the propensity of users to delegate LST to AVS operators if they are paid real-yield in native assets (ETH). Lastly it ensures that the full cycle of yield collection from AVS is conducted with minimal trust assumptions and third-party dependencies. 
+
 ## How does it work?
 
 Stakers deposit into Eigenlayer's contracts. The AVS can read and compute the user's share of the yield in points, tokens or fees, then send it via IBC to THORChain on some interval. THORChain is able to swap to native ETH and hold in yield collector module with the owner set to the staker's L1 address. The Staker can then view their yield and claim it any time. Additionally, the Staker may opt-in for auto-streaming, which causes THORChain to stream out the entire balance on a gas-efficient interval. 
+
+## What problem does it solve?
+
+ETH stakers are much more likely to delegate their LSTs to AVS operators who can pay "real yield" which is realised in native ETH instead of an illiquid rewards token that does not yet have liquidity or price discovery. Hodly solves the routing and collection of yield tokens, as well as ensuring they have liquidity against ETH. ETH stakers will simply see their rewards accrued in a native ETH balance which they can claim anytime. They will be able to compute their annualised yields and make informed decisions about their capital. 
 
 ## Terms:
 
@@ -45,7 +51,8 @@ Diagram of AVS Yield Streaming
 
 Diagram of Hodly Yield Collection
 
-<img width="756" alt="image" src="https://github.com/user-attachments/assets/bccd82db-1379-4b14-bda2-a9df79145b14">
+<img width="698" alt="image" src="https://github.com/user-attachments/assets/c5feef01-28d0-4490-b43f-360194d0e308">
+
 
 
 ## User: Yield-claiming
