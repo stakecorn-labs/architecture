@@ -4,17 +4,15 @@
 
 # Overview
 
-This document serves as a comprehensive guide to understanding the underlying design and structure of Hodly.
-It is intended to provide a clear and detailed description of the various components, systems, and technologies that make up our solution.
-This document will be an essential resource for developers, operators, and anyone involved in the project, offering insight into the Hodly's architecture and how all the pieces fit together. Please feel free to reach out to the team if you have any questions or concerns.
+This document serves as a comprehensive guide to understanding the underlying design and structure of Hodly, with a clear and detailed description of the various components, systems, and technologies that make up the solution.
 
 ## What is Hodly?
 
-Hodly offers a gas-efficient yield-collecting solution for the [Eigenlayer](https://eigenlayer.xyz/) ecosystem, and it will initially be deployed on [Thorchain](https://thorchain.org/) which has native ETH liquidity. Users can re-stake ETH with Eigenlayer and delegate their security to an app-chain (Active Validator Set or AVS). The AVS can stream yield back to the user as native ETH using Hodly, where they can view their accumulated yield, claim it, or even have it auto-streamed to their address on a gas-efficient interval. 
+Hodly offers a gas-efficient yield-collecting solution for the [Eigenlayer](https://eigenlayer.xyz/) ecosystem, and it will initially be deployed on [Thorchain](https://thorchain.org/) which has native ETH liquidity. Users can re-stake ETH with Eigenlayer and delegate their security to an app-chain (Active Validator Set or AVS). The AVS can stream yield back to the staker as native ETH using Hodly, where stakers can view their accumulated yield, claim it, or even have it auto-streamed to their address on a gas-efficient interval. 
 
 ## How does it work?
 
-Eigenlayer parses the re-staked amount and user address and forwards this to the AVS. The AVS can compute the user's share of the yield in points, tokens or fees, then send it via IBC to THORChain on some interval. THORChain is able to swap to native ETH and hold in yield collector module with the owner set to the User's L1 address. The User can then view their yield and claim it any time. Additionally, the user may opt-in for auto-streaming, which causes THORChain to stream out the entire balance on a gas-efficient interval. 
+Stakers deposit into Eigenlayer's contracts. The AVS can read and compute the user's share of the yield in points, tokens or fees, then send it via IBC to THORChain on some interval. THORChain is able to swap to native ETH and hold in yield collector module with the owner set to the staker's L1 address. The Staker can then view their yield and claim it any time. Additionally, the Staker may opt-in for auto-streaming, which causes THORChain to stream out the entire balance on a gas-efficient interval. 
 
 ## Terms:
 
@@ -73,7 +71,7 @@ contract DelegationManager {
 
 ## AVS Reference Implementation
 
-The AVS deposits the yield. The AVS is then able to compute the share of the yields to pay to each user and send it.  
+The AVS deposits the yield as an ERC-20 token. The AVS is then able to compute the share of the yields to pay to each user and send it.  
 
 ```
 contract YieldManager {
@@ -92,6 +90,8 @@ contract YieldManager {
 The AVS must have a deployed [Axelar Gateway contract](https://docs.axelar.dev/dev/cosmos-gmp) or similiar. 
 
 The AVS calls the Gateway contract with the yield tokens, which then forwards it via Axelar to THORChain. 
+
+Only the Staker's L1 address and the yield amount is sent (in yield tokens). 
 
 ```
 bytes memory argValue = abi.encode(recipients); // A standard EVM payload
@@ -116,11 +116,14 @@ function callContractWithToken(
 
 ### Optional: AVS Runs the Relayer. 
 
-The AVS can run an EVM<>IBC Relayer to skip Axelar and directly interact with THORChain. This allows to skip opting in to Axelar's security model. 
+The AVS can run an EVM<>IBC Relayer to skip Axelar and directly interact with THORChain for simplicity. 
+
+The AVS gateway contract would hold the yield tokens forever, and the IBC Channel would mint them to forward to THORChain. 
 
 ## Hodly WASM Contracts
 
-Hodly receives the IBC payload and executes a [Swap](https://github.com/Team-Kujira/kujira-rs/blob/master/packages/kujira-fin/src/execute.rs)
+### IBC Swap to TOR
+Hodly receives the IBC payload and executes a [Swap](https://github.com/Team-Kujira/kujira-rs/blob/master/packages/kujira-fin/src/execute.rs) to THORChain's TOR stablecoin. 
 
 ```
 ExecuteMsg
@@ -134,15 +137,78 @@ Swap {
     }
 ```
 
+### L1 swap to ETH Yield Account
+The callback would then redeem the TOR into L1 RUNE, then stream to ETH to the user's ETH Yield Account: 
+
+```
+MsgDeposit{
+       yield:eth~eth:ethAddress
+}
+```
+
 ## THORChain Yield Accounts
 
-## User Onchain Transactions
+The user now has a Yield Account on THORChain. This can be queried anytime to see accrued yield:
+
+```
+https://thornode.ninerealms.com/thorchain/yield/account/0xb00E81207bcDA63c9E290E0b748252418818c869
+{
+asset: "ETH~ETH",
+units: "1040077124",
+owner: "0xb00E81207bcDA63c9E290E0b748252418818c869",
+auto-stream: "0",
+last_withdraw_height: 17111060
+}
+```
+
+The user can Claim their yield at anytime by interating with [THORChain's Router](https://gitlab.com/thorchain/thornode/-/blob/develop/chain/ethereum/contracts/THORChain_Router.sol)
+```
+function depositWithExpiry(address payable vault, address asset, uint amount, string memory memo, uint expiration) public
+
+MEMO: CLAIM // Claim all the yield
+MEMO: CLAIM:5000 // Claim 50% of the yield
+MEMO: CLAIM:10000:100 // Claim all the yield and set auto-stream to 100x the gas cost
+MEMO: CLAIM::0 // Claim all the yield and set auto-stream off
+```
+
+### Auto-stream
+
+THORChain has a [Collector Module](https://gitlab.com/thorchain/thornode/-/merge_requests/2978) that holds assets until they reach a value that is 100x the outboundGasCost for that chain.
+At this point, it will auto-send the full balance to the user, at which it will execute at a minimum of 99% (1% would be the max gas cost). This efficiently sends native yield directly back to the user. 
 
 # Economics
 
+AVS need two further things to ensure their asset is correctly priced. 
+
+1) Initial liquidity in the `TOR:AVS` token pool in Hodly
+2) Ongoing liquidity incentives to ensure sufficient liquidity for users
+
 ## One-time Liquidity Auction
 
+A liquidity auction can be conducted by the AVS when setting up the channel. 
+
+1) Mint 5-10% of the supply into Hodly as a CW-20 token
+2) Offer this in the new `TOR:AVS` token pool
+3) Over 7-30 days, anyone can deposit `TOR` to match the `AVS` token and infer the launch price of the asset.
+4) When the pool goes live, the AVS will own 50% of the pool, and Liquidity Auction participants will own the other 50%. 
+
 ## Liquidity Mining
+
+The AVS should continually stream yield incentives to the `TOR:AVS` pool as it will be the primary liquidity venue for the AVS token. 
+
+1) The AVS can stream token incentives through the IBC channel with destination the `TOR:AVS` pool.
+2) The incentives are added into the pool which are credited to the pool LPs.
+
+# Summary
+
+Hodly - a yield-collecting service for the Eigenlayer Ecosystem is outlined. The following are the discrete components:
+
+1) AVS: Support yield streaming via an Axelar-like General Message Parsing Gateway Contract
+2) AVS: Maintain an IBC channel to THORChain
+3) AVS: Conduct a Liquidity Auction with incentives to correctly price and build liquidity for the yield token
+4) Hodly: Deploy AVS pools and process inbound yield swaps to native ETH
+5) THORChain: Support Yield Accounts and allow users to query balances, claim and set auto-stream
+
 
 
 
